@@ -1665,7 +1665,7 @@ static int vc4_dsi_bind(struct device *dev, struct device *master, void *data)
 		vc4->dsi1 = dsi;
 
 	drm_encoder_init(drm, dsi->encoder, &vc4_dsi_encoder_funcs,
-			 DRM_MODE_ENCODER_DSI);
+			 DRM_MODE_ENCODER_DSI, NULL);
 	drm_encoder_helper_add(dsi->encoder, &vc4_dsi_encoder_helper_funcs);
 
 	dsi->connector = vc4_dsi_connector_init(drm, dsi);

@@ -444,7 +444,7 @@ static int vc4_dpi_bind(struct device *dev, struct device *master, void *data)
 	dpi->panel = vc4_dpi_get_panel(dev);
 
 	drm_encoder_init(drm, dpi->encoder, &vc4_dpi_encoder_funcs,
-			 DRM_MODE_ENCODER_DPI);
+			 DRM_MODE_ENCODER_DPI, NULL);
 	drm_encoder_helper_add(dpi->encoder, &vc4_dpi_encoder_helper_funcs);
 
 	dpi->connector = vc4_dpi_connector_init(drm, dpi);
