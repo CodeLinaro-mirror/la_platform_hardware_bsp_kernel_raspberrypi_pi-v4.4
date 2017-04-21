@@ -33,6 +33,7 @@ dtbo-$(RPI_DT_OVERLAYS) += hifiberry-dac.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += hifiberry-dacplus.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += hifiberry-digi.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += hifiberry-digi-pro.dtbo
+dtbo-$(RPI_DT_OVERLAYS) += generic-i2s.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += hy28a.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += hy28b.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += i2c-gpio.dtbo
