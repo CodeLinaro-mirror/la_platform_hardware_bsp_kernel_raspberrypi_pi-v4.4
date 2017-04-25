@@ -1,0 +1,35 @@
+// Definitions for Google voiceHAT v1 soundcard overlay
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2708";
+
+	fragment@0 {
+		target = <&i2s>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+
+	fragment@1 {
+		target-path = "/";
+		__overlay__ {
+			pcm-generic-codec {
+				#sound-dai-cells = <0>;
+				compatible = "rpi,pcm-generic";
+				status = "okay";
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&sound>;
+		__overlay__ {
+			compatible = "generic,generic-i2s";
+			i2s-controller = <&i2s>;
+			status = "okay";
+		};
+	};
+};
