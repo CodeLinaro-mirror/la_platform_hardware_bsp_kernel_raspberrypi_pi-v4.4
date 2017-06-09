@@ -12,156 +12,182 @@
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin2_config>;
+          status = "disabled";
         };
 
         BCM3 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin3_config>;
+          status = "disabled";
         };
 
         BCM4 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin4_config>;
+          status = "disabled";
         };
 
         BCM5 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin5_config>;
+          status = "disabled";
         };
 
         BCM6 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin6_config>;
+          status = "disabled";
         };
 
         BCM7 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin7_config>;
+          status = "disabled";
         };
 
         BCM8 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin8_config>;
+          status = "disabled";
         };
 
         BCM9 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin9_config>;
+          status = "disabled";
         };
 
         BCM10 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin10_config>;
+          status = "disabled";
         };
 
         BCM11 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin11_config>;
+          status = "disabled";
         };
 
         BCM12 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin12_config>;
+          status = "disabled";
         };
 
         BCM13 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin13_config>;
+          status = "disabled";
         };
 
         BCM14 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin14_config>;
+          status = "disabled";
         };
 
         BCM15 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin15_config>;
+          status = "disabled";
         };
 
         BCM16 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin16_config>;
+          status = "disabled";
         };
 
         BCM17 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin17_config>;
+          status = "disabled";
         };
 
         BCM18 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin18_config>;
+          status = "disabled";
         };
 
         BCM19 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin19_config>;
+          status = "disabled";
         };
 
         BCM20 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin20_config>;
+          status = "disabled";
         };
 
         BCM21 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin21_config>;
+          status = "disabled";
         };
 
         BCM22 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin22_config>;
+          status = "disabled";
         };
 
         BCM23 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin23_config>;
+          status = "disabled";
         };
 
         BCM24 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin24_config>;
+          status = "disabled";
         };
 
         BCM25 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin25_config>;
+          status = "disabled";
         };
 
         BCM26 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin26_config>;
+          status = "disabled";
         };
 
         BCM27 {
           compatible = "google,android-things-pins";
           pinctrl-names = "default";
           pinctrl-0 = <&pin27_config>;
+          status = "disabled";
         };
       };
     };
