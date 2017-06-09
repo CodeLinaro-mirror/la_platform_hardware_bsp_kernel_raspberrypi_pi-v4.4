@@ -47,7 +47,7 @@ static int pin_probe(struct platform_device *dev)
 {
 	struct pin_device *pin_dev;
 
-	if ((pin_dev = track_pin_device(dev, &pinctrl_class)))
+	if ((pin_dev = track_pin_device(dev)))
 		dev_set_drvdata(&dev->dev, pin_dev);
 
 	return 0;
@@ -66,20 +66,25 @@ static int __init runtimepinconfig_init(void)
 		goto err_class;
 	}
 
-	if (unregister_platform_devices()) {
-		pr_err(TAG "unable to unregister platform devices\n");
-		goto err_unregister_or_driver;
+	if (platform_devices_init(&pinctrl_class)) {
+		pr_err(TAG "unable to initialize platform devices\n");
+		goto err_init_or_driver;
 	}
 
 	if (__platform_driver_register(&pin_driver, THIS_MODULE)) {
 		pr_err(TAG "unable to register pin driver\n");
-		goto err_unregister_or_driver;
+		goto err_init_or_driver;
 	}
 
-	pr_debug(TAG "module loaded\n");
+	if (pin_devices_init()) {
+		pr_err(TAG "unable to initialize pin devices\n");
+		goto err_init_or_driver;
+	}
+
+	pr_info(TAG "driver loaded\n");
 	return 0;
 
-err_unregister_or_driver:
+err_init_or_driver:
 	class_unregister(&pinctrl_class);
 err_class:
 	return -ECANCELED;
@@ -100,4 +105,4 @@ static struct platform_driver pin_driver = {
 	}
 };
 
-module_init(runtimepinconfig_init);
+late_initcall(runtimepinconfig_init);

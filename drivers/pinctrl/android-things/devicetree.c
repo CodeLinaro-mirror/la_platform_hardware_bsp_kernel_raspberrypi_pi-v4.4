@@ -99,7 +99,6 @@ err_alloc_value:
 err_alloc_name:
 	kfree(ret);
 err_alloc_struct:
-	pr_err(TAG "kmalloc failed %s:%d\n", __FILE__, __LINE__);
 	return NULL;
 }
 
