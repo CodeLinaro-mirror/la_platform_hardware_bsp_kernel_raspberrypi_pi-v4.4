@@ -5853,11 +5853,29 @@ struct drm_property *drm_mode_create_rotation_property(struct drm_device *dev,
 		{ DRM_REFLECT_Y,  "reflect-y" },
 	};
 
-	return drm_property_create_bitmask(dev, 0, "rotation",
+	return drm_property_create_bitmask(dev, DRM_MODE_PROP_ATOMIC, "rotation",
 					   props, ARRAY_SIZE(props),
 					   supported_rotations);
 }
 EXPORT_SYMBOL(drm_mode_create_rotation_property);
+
+/**
+ * drm_mode_create_alpha_property - create plane alpha property
+ * @dev: DRM device
+ * @max: maximal possible value of alpha property
+ *
+ * This function initializes generic plane's alpha property. Maximum alpha value
+ * is determined by the driver.
+ *
+ * Returns:
+ * Pointer to property on success, NULL on failure.
+ */
+struct drm_property *drm_mode_create_alpha_property(struct drm_device *dev,
+						    unsigned int max)
+{
+	return drm_property_create_range(dev, DRM_MODE_PROP_ATOMIC, "alpha", 0, max);
+}
+EXPORT_SYMBOL(drm_mode_create_alpha_property);
 
 /**
  * DOC: Tile group

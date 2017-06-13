@@ -821,6 +821,34 @@ out:
 					      src_w, src_h);
 }
 
+int vc4_plane_create_properties(struct drm_device *dev)
+{
+	struct drm_property *prop;
+	if (drm_core_check_feature(dev, DRIVER_ATOMIC)) {
+		// create rotation and alpha property
+		prop = drm_mode_create_rotation_property(dev, DRM_ROTATE_0);
+		if (!prop)
+			return -ENOMEM;
+		dev->mode_config.rotation_property = prop;
+		prop = drm_mode_create_alpha_property(dev, 255);
+		if (!prop)
+			return -ENOMEM;
+		dev->mode_config.alpha_property = prop;
+	}
+	return 0;
+}
+
+static void vc4_plane_attach_properties(struct drm_device *dev, struct drm_plane *plane)
+{
+	struct drm_mode_config *config = &dev->mode_config;
+
+	if (drm_core_check_feature(dev, DRIVER_ATOMIC)) {
+		// attach rotation and alpha property
+		drm_object_attach_property(&plane->base, config->rotation_property, 0);
+		drm_object_attach_property(&plane->base, config->alpha_property, 0);
+	}
+}
+
 static const struct drm_plane_funcs vc4_plane_funcs = {
 	.update_plane = vc4_update_plane,
 	.disable_plane = drm_atomic_helper_disable_plane,
@@ -863,6 +891,8 @@ struct drm_plane *vc4_plane_init(struct drm_device *dev,
 				       &vc4_plane_funcs,
 				       formats, num_formats,
 				       type);
+
+	vc4_plane_attach_properties(dev, plane);
 
 	drm_plane_helper_add(plane, &vc4_plane_helper_funcs);
 
