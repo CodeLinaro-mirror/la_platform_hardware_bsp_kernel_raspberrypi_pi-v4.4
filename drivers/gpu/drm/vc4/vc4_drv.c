@@ -271,6 +271,10 @@ static int vc4_drm_bind(struct device *dev)
 
 	vc4_gem_init(drm);
 
+	ret = vc4_plane_create_properties(drm);
+	if (ret)
+		goto gem_destroy;
+
 	ret = component_bind_all(dev, drm);
 	if (ret)
 		goto gem_destroy;
