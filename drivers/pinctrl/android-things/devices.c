@@ -21,25 +21,28 @@
 #include <linux/mutex.h>
 #include <linux/of.h>
 #include <linux/of_platform.h>
+#include <linux/printk.h>
 #include <linux/slab.h>
 
-#include "runtimepinconfig.h"
 #include "platform_devices.h"
+#include "runtimepinconfig.h"
+
+#define MAX_PIN_DIGITS 2
 
 DEFINE_MUTEX(sysfs_mutex);
-static struct pin_device **pin_array;
+static struct pin_device *pin_array;
 
 static inline struct pin_device *get_pin_device_by_pin(u32 pin)
 {
-	if (!pin_array || pin >= pin_count)
+	if (!pin_array || pin > pin_max || pin < pin_min)
 		return NULL;
 
-	return pin_array[pin];
+	return &pin_array[pin - pin_min];
 }
 
 /*
  * Call a function for each pin in a device tree node. Look up the pin_device
- * represnting the pin and pass that to the function. Don't call the function if
+ * representing the pin and pass that to the function. Don't call the function if
  * no pin_device is found for a pin.
  */
 static int device_for_each_pin(struct device_node *node,
@@ -79,22 +82,16 @@ static int device_for_each_pin(struct device_node *node,
 }
 
 /*
- * track_pin_device() - Create a pin_device for a platform_device that has just
- * been registered, or update it if one already exists. This function should be
- * called from the driver's probe function.
+ * track_pin_device() - Update a pin_device for a platform_device that has just
+ * been registered. This function should be called from the driver's probe
+ * function.
  *
  * @dev:	The platform_device for this pin.
- * @class:	The class to use when creating sysfs files for this device. For
- *		example, using the pinctrl class causes files to be created in
- *		/sys/class/pinctrl.
  *
- * Returns the new (or updated) pin_device on success, NULL on failure.
+ * Returns the updated pin_device on success, NULL on failure.
  */
-struct pin_device *track_pin_device(struct platform_device *dev,
-				    struct class *class)
+struct pin_device *track_pin_device(struct platform_device *dev)
 {
-	const char *name;
-	struct device *chardev;
 	struct pin_device *pin_dev;
 	int ret;
 	u32 pin;
@@ -104,26 +101,12 @@ struct pin_device *track_pin_device(struct platform_device *dev,
 		return NULL;
 	}
 
-	if (of_property_read_string(dev->dev.of_node, "name", &name)) {
-		dev_err(&dev->dev, "no name property found\n");
-		return NULL;
-	}
-
 	if ((ret = get_pin(dev->dev.of_node, &pin))) {
 		dev_err(&dev->dev, "no pin property found\n");
 		return NULL;
 	}
 
-	if (pin >= pin_count) {
-		dev_err(&dev->dev, "pin property %d out of range %d\n", pin,
-			pin_count);
-		return NULL;
-	}
-
-	/* This pin device may be returning after having been unregistered. */
 	if ((pin_dev = get_pin_device_by_pin(pin))) {
-		dev_dbg(&dev->dev, "tracking existing device\n");
-
 		if (pin_dev->device != NULL)
 			dev_warn(&dev->dev, "device is being re-added to pin device %d\n",
 				 pin);
@@ -134,28 +117,8 @@ struct pin_device *track_pin_device(struct platform_device *dev,
 		return pin_dev;
 	}
 
-	if (!(pin_dev = kmalloc(sizeof(*pin_dev), GFP_KERNEL))) {
-		pr_err(TAG "kmalloc failed %s:%d\n", __FILE__, __LINE__);
-		return NULL;
-	}
-
-	chardev = device_create(class, NULL, MKDEV(0, 0), pin_dev, "%s", name);
-	if (IS_ERR(chardev)) {
-		dev_err(&dev->dev, "unable to create char device");
-		kfree(pin_dev);
-		return NULL;
-	}
-
-	pin_dev->pin = pin;
-	pin_dev->set_gpio = 0;
-	pin_dev->device = dev;
-	pin_dev->of_node = of_node_get(dev->dev.of_node);
-	pin_dev->char_device = chardev;
-	pin_array[pin] = pin_dev;
-
-	dev_dbg(&dev->dev, "tracking new device\n");
-
-	return pin_dev;
+	pr_warn(TAG "no pin device found for %d\n", pin);
+	return NULL;
 }
 
 /*
@@ -320,25 +283,105 @@ static inline int register_default_device(struct bcm_device *dev)
 	return register_device_and_aux(dev);
 }
 
+static int register_pin_device(struct pin_device *dev)
+{
+	struct property *prop;
+	struct of_changeset changeset;
+	int ret;
+
+	if (dev->device)
+		return 0;
+
+	if ((prop = of_find_property(dev->of_node, "status", NULL))) {
+		/*
+		 * This pin device marked disabled, meaning it won't be
+		 * registered by register_device_by_node. Instead, we can just
+		 * remove the status property and let the dynamic devicetree
+		 * subsystem handle registration.
+		 */
+		of_changeset_init(&changeset);
+
+		if ((ret = of_changeset_remove_property(&changeset,
+							dev->of_node, prop)))
+			return ret;
+
+		ret = of_changeset_apply(&changeset);
+		of_changeset_destroy(&changeset);
+		return ret;
+	} else {
+		return register_device_by_node(dev->of_node);
+	}
+}
+
+static int set_gpio_flag(struct pin_device *pin)
+{
+	pin->set_gpio = 1;
+	return 0;
+}
+
+static int clear_gpio_flag(struct pin_device *pin)
+{
+	pin->set_gpio = 0;
+	return 0;
+}
+
 /*
- * Unregister all peripheral devices we know about and prepare their device tree
- * properties for our use.
+ * Create the pin device array and sysfs character devices, and standardize the
+ * devicetree configurations of the platform devices.
  */
-int unregister_platform_devices(void)
+int platform_devices_init(struct class *class)
 {
 	struct device *dev;
+	struct pin_device *pin_dev;
 	struct bcm_device *bdev;
+	struct device_node *node;
+	char *pathbuf;
+	size_t prefix_len;
+	u32 i;
 	int ret = 0;
 
 	if (pin_array) {
 		pr_warn(TAG "pin array is already initialized\n");
 	} else {
-		pin_array = kcalloc(pin_count, sizeof(*pin_array),
+		pin_array = kcalloc(pin_max - pin_min + 1, sizeof(*pin_array),
 				    GFP_KERNEL);
-		if (!pin_array) {
-			pr_err(TAG "kmalloc failed %s:%d\n", __FILE__,
-			       __LINE__);
+		if (!pin_array)
 			return -ENOMEM;
+	}
+
+	prefix_len = strlen(pin_path_prefix);
+	if (!(pathbuf = kmalloc(prefix_len + MAX_PIN_DIGITS + 1, GFP_KERNEL))) {
+		ret = -ENOMEM;
+		goto err_init_path;
+	}
+
+	strncpy(pathbuf, pin_path_prefix, prefix_len);
+
+	for (i = pin_min; i <= pin_max; i++) {
+		snprintf(pathbuf + prefix_len, MAX_PIN_DIGITS + 1, "%u", i);
+		if (!(node = of_find_node_by_path(pathbuf))) {
+			pr_warn(TAG "can't find node %s\n", pathbuf);
+			continue;
+		}
+
+		pin_dev = get_pin_device_by_pin(i);
+		pin_dev->pin = i;
+		/*
+		 * Mark this pin as GPIO for now. Later we will unmark pins used
+		 * by registered devices.
+		 */
+		pin_dev->set_gpio = 1;
+		pin_dev->device = NULL;
+		pin_dev->of_node = node;
+		pin_dev->char_device = device_create(class, NULL, MKDEV(0, 0),
+						     pin_dev, "%s%u",
+						     pin_prefix, i);
+		if (IS_ERR(pin_dev->char_device)) {
+			pin_dev->char_device = NULL;
+			pr_err(TAG "unable to create char device for pin %u",
+			       i);
+			ret = -EBADF;
+			goto err_init_chardev;
 		}
 	}
 
@@ -354,34 +397,115 @@ int unregister_platform_devices(void)
 			continue;
 		}
 
-		if (bdev->aux_dev.path)
+		if (bdev->aux_dev.path) {
 			bdev->aux_dev.of_node = of_find_node_by_path(
 					bdev->aux_dev.path);
+			if (!bdev->aux_dev.of_node)
+				pr_warn(TAG "unable to find %s in the device tree\n",
+					bdev->aux_dev.path);
+		}
 
-		/* Unregister the device and auxiliary device. */
-		if (!bdev->use_default) {
+		if (bdev->init_unreg) {
 			dev = find_device_by_node(bdev->node.of_node);
 			unregister_device_and_aux(dev, bdev);
 		}
 
 		if ((ret = expand_property(bdev, PROP_PULL, 0)))
-			return ret;
+			goto err_init_prop;
 		if ((ret = expand_property(bdev, PROP_FUNC,
 					   bdev->pin_groups[0].function)))
-			return ret;
+			goto err_init_prop;
 
-		if (!bdev->use_default)
-			ret = set_device_config(bdev, &bdev->pin_groups[0]);
+		/*
+		 * Set the devicetree configuration, but only if we just
+		 * unregistered the device. Changing the configuration while
+		 * the device is registered could cause a mismatch between the
+		 * devicetree entry and the pins the device is actually using.
+		 * This isn't a huge problem but the devicetree is our only
+		 * source of pin information, so pin devices may silently fail
+		 * to be registered if we mess up.
+		 */
+		if (bdev->init_unreg) {
+			if ((ret = set_device_config(bdev, NULL)))
+				goto err_init_prop;
+		}
 	}
 
+	kfree(pathbuf);
+	return 0;
+
+err_init_prop:
+	for (bdev = platform_devices; bdev->name != NULL; bdev++) {
+		if (!bdev->node.path)
+			continue;
+
+		if (bdev->node.of_node)
+			of_node_put(bdev->node.of_node);
+		if (bdev->aux_dev.of_node)
+			of_node_put(bdev->aux_dev.of_node);
+	}
+err_init_chardev:
+	for (i = pin_min; i <= pin_max; i++) {
+		pin_dev = get_pin_device_by_pin(i);
+		if (pin_dev && pin_dev->device)
+			device_unregister(&pin_dev->device->dev);
+	}
+	kfree(pathbuf);
+err_init_path:
+	kfree(pin_array);
+	pin_array = NULL;
 	return ret;
 }
 
+/* Register pin devices for all unused pins. */
+int pin_devices_init(void)
+{
+	struct pin_device *pdev;
+	struct device *dev;
+	struct bcm_device *bdev;
+	int ret;
+	u32 i;
+
+	for (bdev = platform_devices; bdev->name != NULL; bdev++) {
+		if (!bdev->node.path)
+			continue;
+
+		if (!(dev = find_device_by_node(bdev->node.of_node)))
+			continue;
+
+		/*
+		 * All pin devices have set_gpio set here. Clear the flag for
+		 * all pins used by registered devices.
+		 */
+		device_for_each_pin(bdev->node.of_node, clear_gpio_flag);
+		put_device(dev);
+	}
+
+	for (i = pin_min; i <= pin_max; i++) {
+		pdev = get_pin_device_by_pin(i);
+		if (pdev && pdev->set_gpio) {
+			if ((ret = register_pin_device(pdev)))
+				return ret;
+		}
+	}
+
+	/*
+	 * Prevent kernel messages from being written to the serial console.
+	 * We can still view the messages with dmesg, but we want to stay silent
+	 * when un/registering uart1 so connected serial devices don't see any
+	 * "garbage" data. This is part of our compromise: ideally we wouldn't
+	 * write anything to the serial pins until the user opens them with PIO,
+	 * but we still need a way for developers to provision the device in
+	 * case they don't have access to a wired network.
+	 */
+	console_silent();
+	return 0;
+}
+
 /*
- * Find the device using this pin. The returned device may be a pin device or
- * peripheral device. We register pin devices for each pin when a peripheral
- * device gets unregistered, so returning NULL here should never happen. The
- * caller must call device_put on the returned device.
+ * Find the peripheral device using this pin, or return NULL if it isn't being
+ * used or is being used by a pin device. The caller must call put_device on the
+ * returned device.
  */
 static struct device *find_active_device_by_pin(u32 pin,
 						struct bcm_device **dev)
@@ -416,23 +540,6 @@ static struct device *find_active_device_by_pin(u32 pin,
 	}
 
 	return NULL;
-}
-
-static int register_pin_device(struct pin_device *dev)
-{
-	return (!dev->device) ? register_device_by_node(dev->of_node) : 0;
-}
-
-static int set_gpio_flag(struct pin_device *pin)
-{
-	pin->set_gpio = 1;
-	return 0;
-}
-
-static int clear_gpio_flag(struct pin_device *pin)
-{
-	pin->set_gpio = 0;
-	return 0;
 }
 
 /*
@@ -606,7 +713,7 @@ static inline int replace_pin(struct bcm_device *bcm_dev,
  */
 static inline int __set_function(struct pin_device *dev,
 				 struct bcm_device *bcm_dev,
-				 struct  pin_group *group)
+				 struct pin_group *group)
 {
 	struct device *new_dev;
 	struct device *exdev;
@@ -681,7 +788,7 @@ static inline int __set_function(struct pin_device *dev,
 	device_for_each_pin(bcm_dev->node.of_node, clear_gpio_flag);
 
 	/* Register a pin device for each pin we're not using. */
-	for (i = 0, ret = 0; i < pin_count; i++) {
+	for (i = pin_min, ret = 0; i <= pin_max; i++) {
 		if (!(pin_dev = get_pin_device_by_pin(i)))
 			continue;
 
@@ -703,7 +810,7 @@ static inline int __set_function(struct pin_device *dev,
 }
 
 int set_function(struct pin_device *dev, struct bcm_device *bcm_dev,
-		 struct  pin_group *group)
+		 struct pin_group *group)
 {
 	int ret;
 
@@ -775,6 +882,7 @@ static inline int __set_resistor(struct pin_device *dev, u32 resistor)
 		if (index == -1) {
 			dev_err(pdev, "could not get resistor index for pin %d\n",
 				dev->pin);
+			put_device(pdev);
 			return -EINVAL;
 		}
 	} else {

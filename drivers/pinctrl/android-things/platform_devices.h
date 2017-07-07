@@ -68,13 +68,16 @@ struct pin_group {
  * @use_default:	Whether or not we should register this device on
  *			a default pin_group if nobody is using it. For example,
  *			uart0 on the Raspberry Pi 3 is also used for Bluetooth,
- *			so we need to register it again when the user stops
+ *			so we need to register uart0 again when the user stops
  *			using it directly. pin_groups[0] is the default
  *			pin_group.
  * @always_unreg_aux:	Whether or not we should unregister the auxiliary device
  *			whenever we unregister this device. This flag also
  *			controls the order in which the devices get
  *			registered/unregistered.
+ * @init_unreg:	Whether or not we should unregister the device upon loading the
+ *		module. This is useful for mutually exclusive devices which all
+ *		may be registered at boot.
  * @pin_count:	The number of pins used by this peripheral.
  * @pin_pull:	Specifies default resistor values for this device. Only used
  *		with use_default.
@@ -93,6 +96,7 @@ struct bcm_device {
 	struct node_path aux_dev;
 	int use_default:1;
 	int always_unreg_aux:1;
+	int init_unreg:1;
 	int pin_count;
 	u32 *pin_pull;
 	int pin_group_count;
@@ -118,6 +122,9 @@ struct bcm_resistor {
 
 extern struct bcm_device platform_devices[];
 extern struct bcm_resistor platform_resistors[];
-extern const int pin_count;
+extern const u32 pin_min;
+extern const u32 pin_max;
+extern const char *pin_prefix;
+extern const char *pin_path_prefix;
 
 #endif /* PLATFORM_DEVICES_H_ */

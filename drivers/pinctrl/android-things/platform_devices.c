@@ -27,7 +27,11 @@
  * devices depend on.
  */
 
-const int pin_count = 28;
+const u32 pin_min = 2;
+const u32 pin_max = 27;
+
+const char *pin_prefix = "BCM";
+const char *pin_path_prefix = "/soc/android-things-pins/BCM";
 
 struct bcm_device platform_devices[] = {
 	{
@@ -36,6 +40,7 @@ struct bcm_device platform_devices[] = {
 		.aux_dev = { .path = NULL },
 		.use_default = 0,
 		.always_unreg_aux = 0,
+		.init_unreg = 0,
 		.pin_count = 5,
 		.pin_pull = (u32 []) { NONE, NONE, NONE, NONE, NONE },
 		.pin_group_count = 1,
@@ -52,6 +57,7 @@ struct bcm_device platform_devices[] = {
 		.aux_dev = { .path = "/soc/cprman@7e101000" },
 		.use_default = 0,
 		.always_unreg_aux = 0,
+		.init_unreg = 1,
 		.pin_count = 2,
 		.pin_pull = (u32 []) { NONE, NONE, },
 		.pin_group_count = 2,
@@ -74,6 +80,7 @@ struct bcm_device platform_devices[] = {
 		.aux_dev = { .path = NULL },
 		.use_default = 0,
 		.always_unreg_aux = 0,
+		.init_unreg = 1,
 		.pin_count = 2,
 		.pin_pull = (u32 []) { NONE, NONE },
 		.pin_group_count = 1,
@@ -90,6 +97,7 @@ struct bcm_device platform_devices[] = {
 		.aux_dev = { .path = NULL },
 		.use_default = 1,
 		.always_unreg_aux = 0,
+		.init_unreg = 0,
 		.pin_count = 2,
 		.pin_pull = (u32 []) { NONE, UP },
 		.pin_group_count = 2,
@@ -109,6 +117,7 @@ struct bcm_device platform_devices[] = {
 		.aux_dev = { .path = NULL },
 		.use_default = 0,
 		.always_unreg_aux = 0,
+		.init_unreg = 0,
 		.pin_count = 2,
 		.pin_pull = (u32 []) { NONE, UP },
 		.pin_group_count = 1,
@@ -125,6 +134,7 @@ struct bcm_device platform_devices[] = {
 		.aux_dev = { .path = "/soc/sound" },
 		.use_default = 0,
 		.always_unreg_aux = 1,
+		.init_unreg = 1,
 		.pin_count = 4,
 		.pin_pull = (u32 []) { NONE, NONE, NONE, NONE },
 		.pin_group_count = 1,
@@ -144,6 +154,7 @@ struct bcm_device platform_devices[] = {
 		.aux_dev = { .path = NULL },
 		.use_default = 0,
 		.always_unreg_aux = 0,
+		.init_unreg = 0,
 		.pin_count = 26,
 		.pin_group_count = 1,
 		.pin_groups = (struct pin_group []) {
