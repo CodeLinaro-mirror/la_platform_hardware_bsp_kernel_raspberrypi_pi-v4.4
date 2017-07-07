@@ -59,11 +59,11 @@ int set_function(struct pin_device *dev, struct bcm_device *bcm_dev,
 		 struct pin_group *group);
 int set_resistor(struct pin_device *dev, u32 resistor);
 
-struct pin_device *track_pin_device(struct platform_device *dev,
-				    struct class *class);
+struct pin_device *track_pin_device(struct platform_device *dev);
 void untrack_pin_device(struct pin_device *dev);
 
-int unregister_platform_devices(void);
+int platform_devices_init(struct class *class);
+int pin_devices_init(void);
 
 int get_pin(struct device_node *node, u32 *pin);
 int device_has_pin(struct device_node *node, u32 pin);
