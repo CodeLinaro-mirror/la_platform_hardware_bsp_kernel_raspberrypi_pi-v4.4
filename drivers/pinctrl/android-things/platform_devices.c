@@ -40,14 +40,21 @@ struct bcm_device platform_devices[] = {
 		.aux_dev = { .path = NULL },
 		.use_default = 0,
 		.always_unreg_aux = 0,
-		.init_unreg = 0,
+		.init_unreg = 1,
 		.pin_count = 5,
 		.pin_pull = (u32 []) { NONE, NONE, NONE, NONE, NONE },
-		.pin_group_count = 1,
-		.pin_groups = (struct pin_group []) {
-			{
-				.base = 7,
-				.function = ALT0
+		.pin_groups = 1,
+		.pins = (struct pin_function *[]) {
+			(struct pin_function []) {
+				{ .pin = 7, .index = 0, .function = GPIO_OUT }
+			}, (struct pin_function []) {
+				{ .pin = 8, .index = 1, .function = GPIO_OUT }
+			}, (struct pin_function []) {
+				{ .pin = 9, .index = 2, .function = ALT0 }
+			}, (struct pin_function []) {
+				{ .pin = 10, .index = 3, .function = ALT0 }
+			}, (struct pin_function []) {
+				{ .pin = 11, .index = 4, .function = ALT0 }
 			}
 		},
 		.excl = NULL
@@ -60,14 +67,14 @@ struct bcm_device platform_devices[] = {
 		.init_unreg = 1,
 		.pin_count = 2,
 		.pin_pull = (u32 []) { NONE, NONE, },
-		.pin_group_count = 2,
-		.pin_groups = (struct pin_group []) {
-			{
-				.base = 12,
-				.function = ALT0
-			}, {
-				.base = 18,
-				.function = ALT5
+		.pin_groups = 2,
+		.pins = (struct pin_function *[]) {
+			(struct pin_function []) {
+				{ .pin = 18, .index = 0, .function = ALT5 },
+				{ .pin = 12, .index = 0, .function = ALT0 }
+			}, (struct pin_function []) {
+				{ .pin = 13, .index = 1, .function = ALT0 },
+				{ .pin = 19, .index = 1, .function = ALT5 }
 			}
 		},
 		.excl = (struct bcm_device *[]) {
@@ -83,11 +90,12 @@ struct bcm_device platform_devices[] = {
 		.init_unreg = 1,
 		.pin_count = 2,
 		.pin_pull = (u32 []) { NONE, NONE },
-		.pin_group_count = 1,
-		.pin_groups = (struct pin_group []) {
-			{
-				.base = 2,
-				.function = ALT0
+		.pin_groups = 1,
+		.pins = (struct pin_function *[]) {
+			(struct pin_function []) {
+				{ .pin = 2, .index = 0, .function = ALT0 }
+			}, (struct pin_function []) {
+				{ .pin = 3, .index = 1, .function = ALT0 }
 			}
 		},
 		.excl = NULL
@@ -100,14 +108,14 @@ struct bcm_device platform_devices[] = {
 		.init_unreg = 0,
 		.pin_count = 2,
 		.pin_pull = (u32 []) { NONE, UP },
-		.pin_group_count = 2,
-		.pin_groups = (struct pin_group []) {
-			{
-				.base = 32,
-				.function = ALT3
-			}, {
-				.base = 14,
-				.function = ALT0
+		.pin_groups = 2,
+		.pins = (struct pin_function *[]) {
+			(struct pin_function []) {
+				{ .pin = 32, .index = 0, .function = ALT3 },
+				{ .pin = 14, .index = 0, .function = ALT0 }
+			}, (struct pin_function []) {
+				{ .pin = 33, .index = 1, .function = ALT3 },
+				{ .pin = 15, .index = 1, .function = ALT0 }
 			}
 		},
 		.excl = NULL
@@ -120,11 +128,12 @@ struct bcm_device platform_devices[] = {
 		.init_unreg = 0,
 		.pin_count = 2,
 		.pin_pull = (u32 []) { NONE, UP },
-		.pin_group_count = 1,
-		.pin_groups = (struct pin_group []) {
-			{
-				.base = 14,
-				.function = ALT5
+		.pin_groups = 1,
+		.pins = (struct pin_function *[]) {
+			(struct pin_function []) {
+				{ .pin = 14, .index = 0, .function = ALT5 }
+			}, (struct pin_function []) {
+				{ .pin = 15, .index = 1, .function = ALT5 }
 			}
 		},
 		.excl = NULL
@@ -137,11 +146,16 @@ struct bcm_device platform_devices[] = {
 		.init_unreg = 1,
 		.pin_count = 4,
 		.pin_pull = (u32 []) { NONE, NONE, NONE, NONE },
-		.pin_group_count = 1,
-		.pin_groups = (struct pin_group []) {
-			{
-				.base = 18,
-				.function = ALT0
+		.pin_groups = 1,
+		.pins = (struct pin_function *[]) {
+			(struct pin_function []) {
+				{ .pin = 18, .index = 0, .function = ALT0 }
+			}, (struct pin_function []) {
+				{ .pin = 19, .index = 1, .function = ALT0 }
+			}, (struct pin_function []) {
+				{ .pin = 20, .index = 2, .function = ALT0 }
+			}, (struct pin_function []) {
+				{ .pin = 21, .index = 3, .function = ALT0 }
 			}
 		},
 		.excl = (struct bcm_device *[]) {
@@ -155,14 +169,9 @@ struct bcm_device platform_devices[] = {
 		.use_default = 0,
 		.always_unreg_aux = 0,
 		.init_unreg = 0,
-		.pin_count = 26,
-		.pin_group_count = 1,
-		.pin_groups = (struct pin_group []) {
-			{
-				.base = 2,
-				.function = GPIO
-			}
-		},
+		.pin_count = 0,
+		.pin_groups = 0,
+		.pins = NULL,
 		.excl = NULL
 	}, {
 		.name = NULL
