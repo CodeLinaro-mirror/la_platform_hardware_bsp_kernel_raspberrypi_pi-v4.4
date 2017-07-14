@@ -275,7 +275,7 @@ static int register_device_and_aux(struct bcm_device *dev)
 /* Restore the device's default pin configuration and register it. */
 static inline int register_default_device(struct bcm_device *dev)
 {
-	int ret = set_device_config(dev, NULL);
+	int ret = set_device_default_config(dev);
 
 	if (ret)
 		return ret;
@@ -410,10 +410,9 @@ int platform_devices_init(struct class *class)
 			unregister_device_and_aux(dev, bdev);
 		}
 
-		if ((ret = expand_property(bdev, PROP_PULL, 0)))
+		if ((ret = expand_property(bdev, PROP_PULL, false)))
 			goto err_init_prop;
-		if ((ret = expand_property(bdev, PROP_FUNC,
-					   bdev->pin_groups[0].function)))
+		if ((ret = expand_property(bdev, PROP_FUNC, true)))
 			goto err_init_prop;
 
 		/*
@@ -426,7 +425,7 @@ int platform_devices_init(struct class *class)
 		 * to be registered if we mess up.
 		 */
 		if (bdev->init_unreg) {
-			if ((ret = set_device_config(bdev, NULL)))
+			if ((ret = set_device_default_config(bdev)))
 				goto err_init_prop;
 		}
 	}
@@ -659,28 +658,25 @@ static inline int set_function_gpio(struct pin_device *dev)
 
 /* Replace a pin used by a device and register a pin device for the old pin. */
 static inline int replace_pin(struct bcm_device *bcm_dev,
-			      struct pin_group *group, u32 pin)
+			      struct pin_function *pin)
 {
 	struct pin_device *pin_dev;
 	int ret;
 	__be32 *pin_prop;
 	__be32 *function;
-	u32 pin_index;
 	u32 old_pin;
 
-	pin_index = pin - group->base;
 	pin_prop = find_pin_property(bcm_dev->node.of_node, PROP_PINS,
-				     pin_index);
-
+				     pin->index);
 	if (!pin_prop) {
 		pr_err(TAG "unable to find pin index %d in %s\n",
-		       pin_index, bcm_dev->name);
+		       pin->index, bcm_dev->name);
 		return -EINVAL;
 	}
 
 	old_pin = be32_to_cpup(pin_prop);
 
-	*pin_prop = cpu_to_be32p(&pin);
+	*pin_prop = cpu_to_be32p(&pin->pin);
 
 	if (!(pin_dev = get_pin_device_by_pin(old_pin))) {
 		/*
@@ -693,14 +689,14 @@ static inline int replace_pin(struct bcm_device *bcm_dev,
 
 	/* Set the pin's function property in the device tree. */
 	function = find_pin_property(bcm_dev->node.of_node, PROP_FUNC,
-				     pin_index);
+				     pin->index);
 	if (!function) {
 		pr_err(TAG "unable to find pin function index %d in %s\n",
-		       pin_index, bcm_dev->name);
+		       pin->index, bcm_dev->name);
 		return -EINVAL;
 	}
 
-	*function = cpu_to_be32p(&group->function);
+	*function = cpu_to_be32p(&pin->function);
 
 	return 0;
 }
@@ -713,7 +709,7 @@ static inline int replace_pin(struct bcm_device *bcm_dev,
  */
 static inline int __set_function(struct pin_device *dev,
 				 struct bcm_device *bcm_dev,
-				 struct pin_group *group)
+				 struct pin_function *pin)
 {
 	struct device *new_dev;
 	struct device *exdev;
@@ -723,7 +719,7 @@ static inline int __set_function(struct pin_device *dev,
 	int has_pin;
 	int ret = 0;
 
-	if (!bcm_dev->node.path)
+	if (!pin)
 		return set_function_gpio(dev);
 
 	if (!bcm_dev->node.of_node) {
@@ -743,19 +739,8 @@ static inline int __set_function(struct pin_device *dev,
 	/* Unregister this device so we can change its pins. */
 	unregister_device_and_maybe_aux(new_dev, bcm_dev);
 
-	if (bcm_dev->use_default) {
-		/*
-		 * By default, this device uses non-user pins. Rather than mix
-		 * user and non-user pins, set this device to use all user pins
-		 * as soon as it is requested.
-		 */
-		if ((ret = set_device_config(bcm_dev, group))) {
-			pr_err(TAG "unable to set config for %s\n",
-			       bcm_dev->name);
-			return ret;
-		}
-	} else if (!has_pin) {
-		if ((ret = replace_pin(bcm_dev, group, dev->pin)))
+	if (!has_pin) {
+		if ((ret = replace_pin(bcm_dev, pin)))
 			return ret;
 	}
 
@@ -810,31 +795,30 @@ static inline int __set_function(struct pin_device *dev,
 }
 
 int set_function(struct pin_device *dev, struct bcm_device *bcm_dev,
-		 struct pin_group *group)
+		 struct pin_function *pin)
 {
 	int ret;
 
 	mutex_lock(&sysfs_mutex);
-	ret = __set_function(dev, bcm_dev, group);
+	ret = __set_function(dev, bcm_dev, pin);
 	mutex_unlock(&sysfs_mutex);
 
 	return ret;
 }
 
-
 /*
- * Find a matching pin group and return this pin's index in the property
+ * Find a matching pin_function and return this pin's index in the property
  * list.
  */
-static inline u32 get_pin_property_index(struct bcm_device *dev, u32 pin)
+static inline int get_pin_property_index(struct bcm_device *dev, u32 pin)
 {
-	struct pin_group *groups;
-	size_t i;
+	int i, j;
 
-	groups = dev->pin_groups;
-	for (i = 0 ; dev->pin_group_count; i++) {
-		if (pin_in_group(pin, groups[i].base, dev->pin_count))
-			return pin - groups[i].base;
+	for (i = 0; i < dev->pin_count; i++) {
+		for (j = 0; j < dev->pin_groups; j++) {
+			if (dev->pins[i][j].pin == pin)
+				return i;
+		}
 	}
 
 	return -1;

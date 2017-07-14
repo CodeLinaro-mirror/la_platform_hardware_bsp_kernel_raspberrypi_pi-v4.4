@@ -120,11 +120,14 @@ static inline void fill_value(__be32 *array, u32 value, int length)
  *
  * @dev:	The device to check.
  * @prop_name:	The string name of the property to check.
- * @value:	The new value to fill an expanded property with.
+ * @require:	Whether or not to require an existing property with prop_name
+ *		and at least length 1. This is for the function property which
+ *		does not have a default value to use. In that case, duplicate
+ *		the one existing value for each pin in the node.
  *
  * Returns 0 on success.
  */
-int expand_property(struct bcm_device *dev, const char *prop_name, u32 value)
+int expand_property(struct bcm_device *dev, const char *prop_name, bool require)
 {
 	struct of_changeset changeset;
 	struct device_node *prop;
@@ -135,6 +138,7 @@ int expand_property(struct bcm_device *dev, const char *prop_name, u32 value)
 	int ret;
 	unsigned long action;
 	int i = 0;
+	u32 value;
 
 	of_changeset_init(&changeset);
 
@@ -164,6 +168,18 @@ int expand_property(struct bcm_device *dev, const char *prop_name, u32 value)
 			 */
 			of_node_put(prop);
 			continue;
+		} else if (require && (!pull || pull_length < 1)) {
+			/*
+			 * We require a property of at least length 1 in order
+			 * to fill the rest of the entries.
+			 */
+			pr_err(TAG "%s[%d] doesn't have the required property %s\n",
+			       dev->name, i - 1, prop_name);
+			goto err_prop;
+		} else if (require) {
+			value = be32_to_cpup(pull->value);
+		} else {
+			value = 0;
 		}
 
 		new_pull = create_property(prop_name, pins_length);
@@ -225,26 +241,22 @@ struct device *find_device_by_node(struct device_node *node)
 }
 
 /*
- * set_device_config() - Sets a device's device tree configuration.
+ * set_device_default_config() - Sets a device's device tree configuration to
+ * the default specified in platform_devices.
  *
  * @dev:	The device to change.
- * @group:	The new pin group to set, or NULL for the default.
  *
  * Returns 0 on success.
  */
-int set_device_config(struct bcm_device *dev, struct pin_group *group)
+int set_device_default_config(struct bcm_device *dev)
 {
 	struct device_node *prop;
 	struct property *pins, *function, *pull;
 	__be32 *list;
 	__be32 *flist = NULL;
 	__be32 *plist = NULL;
-	u32 pin;
 	int length;
 	int i, j, total;
-
-	if (!group)
-		group = &dev->pin_groups[0];
 
 	i = 0;
 	j = 0;
@@ -273,15 +285,9 @@ int set_device_config(struct bcm_device *dev, struct pin_group *group)
 		length /= sizeof(*list);
 		total = j + length;
 
-		if (total > dev->pin_count) {
-			pr_warn(TAG "%s has %d pins, more than the %d we know about\n",
-				dev->name, total, dev->pin_count);
-		}
-
 		for ( ; j < total && j < dev->pin_count; j++) {
-			pin = group->base + j;
-			*list++ = cpu_to_be32p(&pin);
-			*flist++ = cpu_to_be32p(&group->function);
+			*list++ = cpu_to_be32p(&dev->pins[j]->pin);
+			*flist++ = cpu_to_be32p(&dev->pins[j]->function);
 			*plist++ = cpu_to_be32p(&dev->pin_pull[j]);
 		}
 

@@ -23,16 +23,14 @@
 
 /*
  * These functions are the sysfs interface. Parse the user input and match it to
- * a peripheral device or resistor value. Use the pin number to determine the
- * pin_group, if necessary.
+ * a pin on a peripheral device or a resistor value.
  */
 ssize_t function_store(struct device *dev, struct device_attribute *attr,
 		       const char *buf, size_t bufsize)
 {
 	struct pin_device *pin_dev = dev_get_drvdata(dev);
 	struct bcm_device *bcm_dev = NULL;
-	size_t i, namelen, inlen;
-	struct pin_group *group;
+	size_t i, j, namelen, inlen;
 	int ret;
 
 	for (inlen = 0; buf[inlen] != '\n' && inlen < bufsize; inlen++)
@@ -54,18 +52,19 @@ ssize_t function_store(struct device *dev, struct device_attribute *attr,
 		pr_warn(TAG "no matching platform device found on pin %d\n",
 			pin_dev->pin);
 		return -ENODEV;
+	} else if (bcm_dev->pin_count == 0) {
+		ret = set_function(pin_dev, bcm_dev, NULL);
+		return (ret) ? ret : bufsize;
 	}
 
-	group = bcm_dev->pin_groups;
-
-	/* Match the pin number to a pin group available to the device. */
-	for (i = 0; i < bcm_dev->pin_group_count; i++) {
-		if (pin_in_group(pin_dev->pin, group[i].base,
-				 bcm_dev->pin_count)) {
-			if ((ret = set_function(pin_dev, bcm_dev, &group[i])))
-				pr_err(TAG "set function %s failed on pin %d\n",
-				       bcm_dev->name, pin_dev->pin);
-			return (ret) ? ret : bufsize;
+	/* Loop over the possible pins for this device. */
+	for (i = 0; i < bcm_dev->pin_count; i++) {
+		for (j = 0; j < bcm_dev->pin_groups; j++) {
+			if (bcm_dev->pins[i][j].pin == pin_dev->pin) {
+				ret = set_function(pin_dev, bcm_dev,
+						   &bcm_dev->pins[i][j]);
+				return (ret) ? ret : bufsize;
+			}
 		}
 	}
 
