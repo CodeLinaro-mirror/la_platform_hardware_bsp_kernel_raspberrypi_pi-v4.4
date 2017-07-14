@@ -33,6 +33,7 @@ dtbo-$(RPI_DT_OVERLAYS) += hifiberry-dac.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += hifiberry-dacplus.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += hifiberry-digi.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += hifiberry-digi-pro.dtbo
+dtbo-$(RPI_DT_OVERLAYS) += bcm2710-rpi-3-b-i2s-use-cprman.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += bcm2710-rpi-3-b-spi0-pin-reorder.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += generic-i2s.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += hy28a.dtbo
