@@ -54,7 +54,7 @@ struct bcm_device platform_devices[] = {
 	}, {
 		.name = "PWM",
 		.node = { .path = "/soc/pwm@7e20c000" },
-		.aux_dev = { .path = "/soc/cprman@7e101000" },
+		.aux_dev = { .path = NULL },
 		.use_default = 0,
 		.always_unreg_aux = 0,
 		.init_unreg = 1,
