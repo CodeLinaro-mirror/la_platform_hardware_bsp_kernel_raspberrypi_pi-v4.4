@@ -25,7 +25,7 @@
 
 #define TAG "runtimepinconfig: "
 
-struct pin_group;
+struct pin_function;
 struct bcm_device;
 
 /*
@@ -56,7 +56,7 @@ ssize_t resistor_store(struct device *dev, struct device_attribute *attr,
 		       const char *buf, size_t buflen);
 
 int set_function(struct pin_device *dev, struct bcm_device *bcm_dev,
-		 struct pin_group *group);
+		 struct pin_function *pin);
 int set_resistor(struct pin_device *dev, u32 resistor);
 
 struct pin_device *track_pin_device(struct platform_device *dev);
@@ -67,13 +67,9 @@ int pin_devices_init(void);
 
 int get_pin(struct device_node *node, u32 *pin);
 int device_has_pin(struct device_node *node, u32 pin);
-int expand_property(struct bcm_device *dev, const char *prop_name, u32 value);
+int expand_property(struct bcm_device *dev, const char *prop_name,
+		    bool require);
 struct device *find_device_by_node(struct device_node *node);
-int set_device_config(struct bcm_device *dev, struct pin_group *group);
-
-static inline int pin_in_group(int pin, int base, int count)
-{
-	return (pin >= base && pin < base + count);
-}
+int set_device_default_config(struct bcm_device *dev);
 
 #endif /* RUNTIMEPINCONFIG_H_ */
