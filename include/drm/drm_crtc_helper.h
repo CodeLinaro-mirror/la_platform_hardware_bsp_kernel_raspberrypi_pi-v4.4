@@ -168,6 +168,7 @@ struct drm_encoder_helper_funcs {
 /**
  * struct drm_connector_helper_funcs - helper operations for connectors
  * @get_modes: get mode list for this connector
+ * @get_default_modes: get default mode list for this connector
  * @mode_valid: is this mode valid on the given connector? (optional)
  * @best_encoder: return the preferred encoder for this connector
  * @atomic_best_encoder: atomic version of @best_encoder
@@ -176,6 +177,7 @@ struct drm_encoder_helper_funcs {
  */
 struct drm_connector_helper_funcs {
 	int (*get_modes)(struct drm_connector *connector);
+	int (*get_default_modes)(struct drm_connector *connector);
 	enum drm_mode_status (*mode_valid)(struct drm_connector *connector,
 					   struct drm_display_mode *mode);
 	struct drm_encoder *(*best_encoder)(struct drm_connector *connector);

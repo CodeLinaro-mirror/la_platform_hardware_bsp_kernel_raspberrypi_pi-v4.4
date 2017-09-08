@@ -211,6 +211,27 @@ static int vc4_hdmi_connector_get_modes(struct drm_connector *connector)
 	return ret;
 }
 
+static int vc4_hdmi_connector_get_default_modes(struct drm_connector *connector)
+{
+	struct vc4_hdmi_connector *vc4_connector =
+		to_vc4_hdmi_connector(connector);
+	struct drm_encoder *encoder = vc4_connector->encoder;
+	struct vc4_hdmi_encoder *vc4_encoder = to_vc4_hdmi_encoder(encoder);
+	struct drm_device *dev = connector->dev;
+	struct drm_display_mode *default_mode = NULL;
+	int ret = 0;
+
+	default_mode = drm_cvt_mode(dev, 800, 480, 60, false, false, false);
+	if (default_mode) {
+		drm_mode_probed_add(connector, default_mode);
+		ret++;
+	}
+	if (ret > 0)
+		vc4_encoder->hdmi_monitor = true;
+
+	return ret;
+}
+
 static struct drm_encoder *
 vc4_hdmi_connector_best_encoder(struct drm_connector *connector)
 {
@@ -231,6 +252,7 @@ static const struct drm_connector_funcs vc4_hdmi_connector_funcs = {
 
 static const struct drm_connector_helper_funcs vc4_hdmi_connector_helper_funcs = {
 	.get_modes = vc4_hdmi_connector_get_modes,
+	.get_default_modes = vc4_hdmi_connector_get_default_modes,
 	.best_encoder = vc4_hdmi_connector_best_encoder,
 };
 

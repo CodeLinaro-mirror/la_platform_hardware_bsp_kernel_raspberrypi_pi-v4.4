@@ -194,7 +194,13 @@ static int drm_helper_probe_single_connector_modes_merge_bits(struct drm_connect
 	if (connector->status == connector_status_disconnected) {
 		DRM_DEBUG_KMS("[CONNECTOR:%d:%s] disconnected\n",
 			connector->base.id, connector->name);
+		if (connector_funcs->get_default_modes)
+			count = (*connector_funcs->get_default_modes)(connector);
 		drm_mode_connector_update_edid_property(connector, NULL);
+		if (count > 0) {
+			connector->status = connector_status_connected;
+			goto validate;
+		}
 		verbose_prune = false;
 		goto prune;
 	}
@@ -219,6 +225,7 @@ static int drm_helper_probe_single_connector_modes_merge_bits(struct drm_connect
 	if (count == 0)
 		goto prune;
 
+validate:
 	drm_mode_connector_list_update(connector, merge_type_bits);
 
 	if (connector->interlace_allowed)
