@@ -36,6 +36,10 @@
 #include "vc4_drv.h"
 #include "vc4_regs.h"
 
+#ifdef CONFIG_DRM_VC4_RPIFIRMWARE_EDID
+#include "soc/bcm2835/raspberrypi-firmware.h"
+#endif /* CONFIG_DRM_VC4_RPIFIRMWARE_EDID */
+
 /* General HDMI hardware state. */
 struct vc4_hdmi {
 	struct platform_device *pdev;
@@ -189,6 +193,71 @@ static void vc4_hdmi_connector_destroy(struct drm_connector *connector)
 	drm_connector_cleanup(connector);
 }
 
+#ifdef CONFIG_DRM_VC4_RPIFIRMWARE_EDID
+static struct edid *vc4_hdmi_connector_rpifirmare_edid(void)
+{
+	struct {
+		u32 no;
+		u32 status;
+		u8 block[EDID_LENGTH];
+	} buffer;
+	struct rpi_firmware *fw;
+	int i, extensions, valid_extensions = 0;
+	u8 *edid, *temp_edid;
+
+	fw = rpi_firmware_get(NULL);
+	if (!fw)
+		return NULL;
+
+	/* read the first block of EDID */
+	buffer.no = 0;
+	if (rpi_firmware_property(fw, RPI_FIRMWARE_GET_EDID_BLOCK,
+				  &buffer, sizeof(buffer))) {
+		DRM_ERROR("Failed to get EDID block from RPI firmware\n");
+		return NULL;
+	}
+	if (!drm_edid_block_valid(buffer.block, buffer.no, false, NULL))
+		return NULL;
+
+	extensions = buffer.block[0x7e];
+	edid = kzalloc(EDID_LENGTH * (extensions + 1), GFP_KERNEL);
+	if (!edid)
+		return NULL;
+	memcpy(edid, buffer.block, EDID_LENGTH);
+
+	/* read the rest part(extensions) of EDID, if any */
+	for (i = 1; i <= extensions && !buffer.status; i++) {
+		buffer.no = i;
+		if (rpi_firmware_property(fw, RPI_FIRMWARE_GET_EDID_BLOCK,
+					  &buffer, sizeof(buffer))) {
+			DRM_ERROR("Failed to get EDID block from RPI firmware\n");
+			goto fail;
+		}
+		if (!drm_edid_block_valid(buffer.block, buffer.no, false, NULL))
+			continue;
+		memcpy(edid + (valid_extensions + 1) * EDID_LENGTH,
+		       buffer.block, EDID_LENGTH);
+		valid_extensions++;
+	}
+
+	if (valid_extensions != extensions) {
+		edid[EDID_LENGTH - 1] += extensions - valid_extensions;
+		edid[0x7e] = valid_extensions;
+		temp_edid = krealloc(edid, (valid_extensions + 1) * EDID_LENGTH,
+				     GFP_KERNEL);
+		if (!temp_edid)
+			goto fail;
+		edid = temp_edid;
+	}
+
+	return (struct edid *)edid;
+
+fail:
+	kfree(edid);
+	return NULL;
+}
+#endif /* CONFIG_DRM_VC4_RPIFIRMWARE_EDID */
+
 static int vc4_hdmi_connector_get_modes(struct drm_connector *connector)
 {
 	struct vc4_hdmi_connector *vc4_connector =
@@ -201,6 +270,10 @@ static int vc4_hdmi_connector_get_modes(struct drm_connector *connector)
 	struct edid *edid;
 
 	edid = drm_get_edid(connector, vc4->hdmi->ddc);
+#ifdef CONFIG_DRM_VC4_RPIFIRMWARE_EDID
+	if (!edid)
+		edid = vc4_hdmi_connector_rpifirmare_edid();
+#endif /* CONFIG_DRM_VC4_RPIFIRMWARE_EDID */
 	if (!edid)
 		return -ENODEV;
 
