@@ -154,6 +154,10 @@
 	pinctrl-0 = <&i2s_pins>;
 };
 
+&hdmi {
+	hpd-gpios = <&gpio 46 GPIO_ACTIVE_HIGH>;
+};
+
 &random {
 	status = "okay";
 };
