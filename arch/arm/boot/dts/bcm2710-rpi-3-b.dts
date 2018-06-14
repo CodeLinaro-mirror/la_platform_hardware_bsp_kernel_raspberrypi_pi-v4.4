@@ -23,6 +23,16 @@
 		brcm,function = <1>; /* output */
 	};
 
+	spi1_pins: spi1_pins {
+		brcm,pins = <19 20 21>;
+		brcm,function = <3>; /* alt4 */
+	};
+
+	spi1_cs_pins: spi1_cs_pins {
+		brcm,pins = <16 17 18>;
+		brcm,function = <1>; /* output */
+	};
+
 	i2c0_pins: i2c0 {
 		brcm,pins = <0 1>;
 		brcm,function = <4>;
@@ -145,6 +155,34 @@
 &spi1 {
 	interrupt-parent = <&aux>;
 	interrupts = <1>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi1_cs_pins &spi1_pins>;
+	cs-gpios = <&gpio 18 1>, <&gpio 17 1>, <&gpio 16 1>;
+	status = "okay";
+
+	spidev@0 {
+		compatible = "spidev";
+		reg = <0>;	/* CE0 */
+		#address-cells = <1>;
+		#size-cells = <0>;
+		spi-max-frequency = <32000000>;
+	};
+
+	spidev@1 {
+		compatible = "spidev";
+		reg = <1>;	/* CE1 */
+		#address-cells = <1>;
+		#size-cells = <0>;
+		spi-max-frequency = <32000000>;
+	};
+
+	spidev@2 {
+		compatible = "spidev";
+		reg = <2>;	/* CE2 */
+		#address-cells = <1>;
+		#size-cells = <0>;
+		spi-max-frequency = <32000000>;
+	};
 };
 
 &spi2 {

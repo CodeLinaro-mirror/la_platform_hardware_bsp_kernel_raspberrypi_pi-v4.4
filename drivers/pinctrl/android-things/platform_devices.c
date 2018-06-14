@@ -59,6 +59,32 @@ struct bcm_device platform_devices[] = {
 		},
 		.excl = NULL
 	}, {
+		.name = "SPI1",
+		.node = { .path = "/soc/spi@7e215080" },
+		.aux_dev = { .path = NULL },
+		.use_default = 0,
+		.always_unreg_aux = 0,
+		.init_unreg = 1,
+		.pin_count = 6,
+		.pin_pull = (u32 []) { NONE, NONE, NONE, NONE, NONE, NONE },
+		.pin_groups = 1,
+		.pins = (struct pin_function *[]) {
+			(struct pin_function []) {
+				{ .pin = 16, .index = 0, .function = GPIO_OUT }
+			}, (struct pin_function []) {
+				{ .pin = 17, .index = 1, .function = GPIO_OUT }
+			}, (struct pin_function []) {
+				{ .pin = 18, .index = 2, .function = GPIO_OUT }
+			}, (struct pin_function []) {
+				{ .pin = 19, .index = 3, .function = ALT4 }
+			}, (struct pin_function []) {
+				{ .pin = 20, .index = 4, .function = ALT4 }
+			}, (struct pin_function []) {
+				{ .pin = 21, .index = 5, .function = ALT4 }
+			}
+		},
+		.excl = NULL
+	}, {
 		.name = "PWM",
 		.node = { .path = "/soc/pwm@7e20c000" },
 		.aux_dev = { .path = NULL },
