@@ -98,6 +98,13 @@
 	status = "okay";
 };
 
+&aux {
+	interrupts = <1 29>;
+	interrupt-controller;
+	#interrupt-cells = <1>;
+	status = "okay";
+};
+
 &uart0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart0_pins &bt_pins>;
@@ -105,6 +112,9 @@
 };
 
 &uart1 {
+	interrupt-parent = <&aux>;
+	interrupts = <0>;
+	clocks = <&aux BCM2835_AUX_CLOCK_UART>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart1_pins>;
 	status = "okay";
@@ -130,6 +140,16 @@
 		#size-cells = <0>;
 		spi-max-frequency = <32000000>;
 	};
+};
+
+&spi1 {
+	interrupt-parent = <&aux>;
+	interrupts = <1>;
+};
+
+&spi2 {
+	interrupt-parent = <&aux>;
+	interrupts = <2>;
 };
 
 &i2c0 {
