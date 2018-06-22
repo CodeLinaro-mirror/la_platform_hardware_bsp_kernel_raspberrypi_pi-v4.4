@@ -1,0 +1,25 @@
+/dts-v1/;
+/plugin/;
+
+/* Set "skip-init" to true in both UART interfaces to prevent U-Boot from
+ * re-initializing the UART interface. This value used to be hard-coded in
+ * U-Boot before it moved the rpi board to use the device tree to configure the
+ * serial interfaces. Without this overlay U-Boot hangs when setting up the
+ * console.
+ */
+
+/ {
+  fragment@0 {
+    target = <&uart0>;
+    __overlay__ {
+      skip-init;
+    };
+  };
+
+  fragment@1 {
+    target = <&uart1>;
+    __overlay__ {
+      skip-init;
+    };
+  };
+};

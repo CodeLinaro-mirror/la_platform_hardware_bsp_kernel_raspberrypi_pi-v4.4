@@ -1,0 +1,15 @@
+/dts-v1/;
+/plugin/;
+
+/* Select the "serial0" as the stdout-path so U-Boot picks the right serial
+ * to output the terminal to.
+ */
+
+/ {
+  fragment@0 {
+    target-path = "/chosen";
+    __overlay__ {
+      stdout-path = "serial0";
+    };
+  };
+};
