@@ -104,7 +104,7 @@ struct bcm_device platform_devices[] = {
 			}
 		},
 		.excl = (struct bcm_device *[]) {
-			&platform_devices[5],
+			&platform_devices[6],
 			NULL
 		}
 	}, {
@@ -185,7 +185,7 @@ struct bcm_device platform_devices[] = {
 			}
 		},
 		.excl = (struct bcm_device *[]) {
-			&platform_devices[1],
+			&platform_devices[2],
 			NULL
 		}
 	}, {
